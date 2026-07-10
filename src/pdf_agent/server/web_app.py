@@ -209,6 +209,7 @@ class PdfAgentRequestHandler(BaseHTTPRequestHandler):
                     model=_string_value(body.get("model"), ""),
                     post_with_retries=self.server.chat_gateway._post_with_retries,
                     config_store=self.server.model_config_store,
+                    manager=self.server.oauth_api.manager,
                 )))
             elif path == "/api/agent/chat":
                 body = self._read_json()

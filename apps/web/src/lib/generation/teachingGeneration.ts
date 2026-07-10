@@ -80,9 +80,10 @@ export type GeneratedTeachingPagesResponse = {
 
 export const TEACHING_GENERATION_CONCURRENCY = 6;
 export const TEACHING_DOCUMENT_GENERATION_CONCURRENCY = 3;
-const TEACHING_QUALITY_MODEL = "gpt-5.5";
-const TEACHING_BALANCED_MODEL = "gpt-5.4";
-const TEACHING_FAST_MODEL = "gpt-5.4-mini";
+const TEACHING_QUALITY_MODEL = "gpt-5.6-sol";
+const TEACHING_BALANCED_MODEL = "gpt-5.6-terra";
+const TEACHING_FAST_MODEL = "gpt-5.6-luna";
+const LEGACY_TEACHING_BALANCED_MODEL = "gpt-5.4";
 const TEACHING_TEXT_PAGE_BATCH_SIZE = 12;
 const TEACHING_TEXT_COMPACT_PAGE_BATCH_SIZE = 18;
 const TEACHING_TEXT_TINY_PAGE_BATCH_SIZE = 24;
@@ -120,6 +121,7 @@ const teachingReasoningRank: Record<UiPreferences["modelReasoningEffort"], numbe
   medium: 2,
   high: 3,
   xhigh: 4,
+  max: 5,
 };
 
 export function normalizeTeachingOutputLanguage(value: unknown): TeachingOutputLanguage | undefined {
@@ -150,6 +152,7 @@ export function teachingGenerationReasoningEffort(
   requested: UiPreferences["modelReasoningEffort"] = "low",
 ): UiPreferences["modelReasoningEffort"] {
   if (requested === "low") return preference === "none" ? "none" : "low";
+  if (preference === "max") return "max";
   if (preference === "xhigh") return "xhigh";
   if (preference === "high") return "high";
   return requested;
@@ -603,22 +606,30 @@ function teachingBatchSizeForPlan(plan: TeachingGenerationQualityPlan, pages: Pa
     }
     return TEACHING_TEXT_PAGE_BATCH_SIZE;
   }
-  if (!plan.attachPdf && plan.model === TEACHING_BALANCED_MODEL) return TEACHING_BALANCED_TEXT_PAGE_BATCH_SIZE;
+  if (!plan.attachPdf && isBalancedTeachingModel(plan.model)) return TEACHING_BALANCED_TEXT_PAGE_BATCH_SIZE;
   return TEACHING_BALANCED_PAGE_BATCH_SIZE;
 }
 
 function isFastTextTeachingPlan(plan: TeachingGenerationQualityPlan) {
-  return plan.model === TEACHING_FAST_MODEL && (plan.reasoningEffort === "none" || plan.reasoningEffort === "low") && !plan.attachPdf;
+  return isFastTeachingModel(plan.model) && (plan.reasoningEffort === "none" || plan.reasoningEffort === "low") && !plan.attachPdf;
 }
 
 function teachingSourceRequestLimitForPlan(plan: TeachingGenerationQualityPlan) {
-  if (plan.attachPdf || plan.reasoningEffort === "high" || plan.reasoningEffort === "xhigh") {
+  if (plan.attachPdf || plan.reasoningEffort === "high" || plan.reasoningEffort === "xhigh" || plan.reasoningEffort === "max") {
     return TEACHING_QUALITY_SOURCE_REQUEST_CHARS;
   }
-  if (plan.model === TEACHING_FAST_MODEL && (plan.reasoningEffort === "none" || plan.reasoningEffort === "low")) {
+  if (isFastTeachingModel(plan.model) && (plan.reasoningEffort === "none" || plan.reasoningEffort === "low")) {
     return TEACHING_FAST_SOURCE_REQUEST_CHARS;
   }
   return TEACHING_BALANCED_SOURCE_REQUEST_CHARS;
+}
+
+function isFastTeachingModel(model: string) {
+  return model === TEACHING_FAST_MODEL || model.toLowerCase().includes("mini");
+}
+
+function isBalancedTeachingModel(model: string) {
+  return model === TEACHING_BALANCED_MODEL || model === LEGACY_TEACHING_BALANCED_MODEL;
 }
 
 function truncateGenerationRequestText(value: string, maxChars: number) {

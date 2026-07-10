@@ -6,7 +6,7 @@ export type FontScale = "compact" | "default" | "large";
 export type ScrollbarStyle = "thin" | "subtle" | "native";
 export type Language = "zh-CN" | "en-US";
 export type ExplanationLanguage = "auto" | Language;
-export type ModelReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
+export type ModelReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh" | "max";
 export type AgentAnswerMode = "concise" | "guided" | "detailed";
 export type ApiProviderType =
   | "codex-oauth"
@@ -113,7 +113,7 @@ export const defaultUiPreferences: UiPreferences = {
 };
 
 export const defaultModelApiConfig: ModelApiConfig = {
-  version: 1,
+  version: 2,
   catalog: undefined,
   selectedProviderId: "codex_oauth",
   providers: [
@@ -124,7 +124,7 @@ export const defaultModelApiConfig: ModelApiConfig = {
       apiHost: "https://chatgpt.com/backend-api/codex/",
       apiKeyRequired: false,
       enabled: true,
-      models: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
+      models: ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
     },
     {
       id: "openai_api",
@@ -133,7 +133,7 @@ export const defaultModelApiConfig: ModelApiConfig = {
       apiHost: "https://api.openai.com/v1",
       apiKeyRequired: true,
       enabled: false,
-      models: ["gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini"],
+      models: ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini"],
     },
     {
       id: "deepseek",
@@ -173,10 +173,10 @@ export const defaultModelApiConfig: ModelApiConfig = {
     },
   ],
   defaults: {
-    assistant: { providerId: "codex_oauth", model: "gpt-5.5" },
-    teachingFast: { providerId: "codex_oauth", model: "gpt-5.4-mini" },
-    teachingBalanced: { providerId: "codex_oauth", model: "gpt-5.4" },
-    teachingQuality: { providerId: "codex_oauth", model: "gpt-5.5" },
+    assistant: { providerId: "codex_oauth", model: "gpt-5.6-sol" },
+    teachingFast: { providerId: "codex_oauth", model: "gpt-5.6-luna" },
+    teachingBalanced: { providerId: "codex_oauth", model: "gpt-5.6-terra" },
+    teachingQuality: { providerId: "codex_oauth", model: "gpt-5.6-sol" },
   },
 };
 
@@ -211,7 +211,7 @@ export function normalizeExplanationLanguage(value: unknown): ExplanationLanguag
 }
 
 export function normalizeModelReasoningEffort(value: unknown): ModelReasoningEffort {
-  return value === "none" || value === "low" || value === "medium" || value === "high" || value === "xhigh" ? value : "medium";
+  return value === "none" || value === "low" || value === "medium" || value === "high" || value === "xhigh" || value === "max" ? value : "medium";
 }
 
 export function normalizeAgentAnswerMode(value: unknown): AgentAnswerMode {
@@ -227,7 +227,7 @@ export function normalizeModelApiConfig(value: unknown): ModelApiConfig {
     ? String(source.selectedProviderId)
     : providers[0]?.id || defaultModelApiConfig.selectedProviderId;
   return {
-    version: 1,
+    version: 2,
     catalog: isPlainRecord(source.catalog) ? source.catalog as ModelApiConfig["catalog"] : undefined,
     selectedProviderId,
     providers,
@@ -280,9 +280,10 @@ function normalizeModelRef(value: unknown, providers: ModelApiProvider[], fallba
   const ref = (value && typeof value === "object" ? value : {}) as Partial<ModelRef>;
   const providerId = providers.some((provider) => provider.id === ref.providerId) ? String(ref.providerId) : fallback.providerId;
   const provider = providers.find((item) => item.id === providerId) || providers[0];
+  const fallbackModel = provider?.models.includes(fallback.model) ? fallback.model : provider?.models[0];
   return {
     providerId: provider?.id || fallback.providerId,
-    model: cleanString(ref.model) || provider?.models[0] || fallback.model,
+    model: cleanString(ref.model) || fallbackModel || fallback.model,
   };
 }
 

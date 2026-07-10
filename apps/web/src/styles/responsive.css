@@ -17,12 +17,17 @@
 
 .primary-button,
 .composer-send {
-  background: linear-gradient(180deg, var(--pp-accent-hover), var(--pp-accent-active));
+  background: var(--pp-accent);
 }
 
 .primary-button:hover,
 .composer-send:hover {
-  background: linear-gradient(180deg, color-mix(in oklch, var(--pp-accent-hover) 92%, white), var(--pp-accent));
+  background: var(--pp-accent-hover);
+}
+
+.primary-button.is-stopping,
+.primary-button.is-stopping:hover {
+  background: var(--pp-danger);
 }
 
 .settings-dialog {
@@ -139,7 +144,7 @@
     flex: none !important;
     overflow: hidden;
     border: 1px solid color-mix(in oklch, var(--line) 74%, transparent);
-    border-radius: 8px;
+    border-radius: 14px;
     background: color-mix(in oklch, var(--background) 88%, white);
   }
 

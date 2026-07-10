@@ -165,7 +165,7 @@ test.describe("Agent Panel", () => {
     await expect.poll(() => requestPayload?.input || "").toContain("questions 数组");
     await expect.poll(() => requestPayload?.input || "").toContain("synchropage.challenge_quiz.v1");
     await expect.poll(() => requestPayload?.modelProviderId || "").toBe("codex_oauth");
-    await expect.poll(() => requestPayload?.model || "").toBe("gpt-5.5");
+    await expect.poll(() => requestPayload?.model || "").toBe("gpt-5.6-sol");
     await expect.poll(() => requestPayload?.reasoningEffort || "").toBe("xhigh");
     await expect.poll(() => requestPayload?.messages?.at(-1)?.content || "").toContain("Challenge");
   });
@@ -243,7 +243,7 @@ test.describe("Agent Panel", () => {
     await expect.poll(() => requestPayload?.input || "").toContain("synchropage.challenge_problem.v1");
     await expect.poll(() => requestPayload?.input || "").toContain("不要硬编");
     await expect.poll(() => requestPayload?.modelProviderId || "").toBe("codex_oauth");
-    await expect.poll(() => requestPayload?.model || "").toBe("gpt-5.5");
+    await expect.poll(() => requestPayload?.model || "").toBe("gpt-5.6-sol");
     await expect.poll(() => requestPayload?.reasoningEffort || "").toBe("xhigh");
     await expect.poll(() => requestPayload?.messages?.at(-1)?.content || "").toContain("典型大题");
   });

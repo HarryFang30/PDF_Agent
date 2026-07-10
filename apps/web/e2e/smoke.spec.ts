@@ -78,6 +78,55 @@ test.describe("Smoke", () => {
     await expect(page.locator(".settings-catalog-model-item")).toContainText("200K ctx");
   });
 
+  test("provider check targets the configured GPT-5.6 assistant model", async ({ page }) => {
+    let checkedModel = "";
+    await mockApi(page, {
+      "/api/model-config": {
+        version: 2,
+        selectedProviderId: "codex_oauth",
+        providers: [
+          {
+            id: "codex_oauth",
+            name: "OpenAI OAuth",
+            type: "codex-oauth",
+            apiHost: "https://chatgpt.com/backend-api/codex/",
+            apiKeyRequired: false,
+            enabled: true,
+            models: ["gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"],
+          },
+        ],
+        defaults: {
+          assistant: { providerId: "codex_oauth", model: "gpt-5.6-sol" },
+          teachingFast: { providerId: "codex_oauth", model: "gpt-5.6-luna" },
+          teachingBalanced: { providerId: "codex_oauth", model: "gpt-5.6-terra" },
+          teachingQuality: { providerId: "codex_oauth", model: "gpt-5.6-sol" },
+        },
+      },
+      "/api/model-catalog/models": { models: [] },
+    });
+    await page.route("**/api/model-config/check", async (route) => {
+      checkedModel = String(route.request().postDataJSON()?.model || "");
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, endpoint: "codex-oauth", model: checkedModel, text: "OK" }),
+      });
+    });
+    await page.reload();
+    await page.waitForSelector(".app-shell", { timeout: 10_000 });
+
+    await page.locator(".rail-settings-button").click();
+    const navItems = page.locator(".settings-nav-item");
+    await expect(navItems).toHaveCount(9);
+    await navItems.nth(1).click();
+    const checkButton = page.locator(".settings-provider-panel").getByRole("button", { name: "Check", exact: true });
+    await expect(checkButton).toHaveCount(1);
+    await checkButton.click();
+
+    await expect.poll(() => checkedModel).toBe("gpt-5.6-sol");
+    await expect(page.locator(".settings-provider-panel")).toContainText("Check passed · gpt-5.6-sol");
+  });
+
   test("desktop save folder settings stay inside the dialog with long paths", async ({ page }) => {
     await page.setViewportSize({ width: 1220, height: 720 });
     await page.addInitScript(() => {

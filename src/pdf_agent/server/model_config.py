@@ -9,14 +9,22 @@ from pathlib import Path
 from typing import Any
 
 from pdf_agent.auth.openai_oauth import atomic_write_secret, default_data_dir
-from pdf_agent.server.constants import MODEL_GPT_54, MODEL_GPT_54_MINI, MODEL_GPT_55
+from pdf_agent.server.constants import (
+    GPT_56_MODELS,
+    MODEL_GPT_54,
+    MODEL_GPT_54_MINI,
+    MODEL_GPT_55,
+    MODEL_GPT_56_LUNA,
+    MODEL_GPT_56_SOL,
+    MODEL_GPT_56_TERRA,
+)
 from pdf_agent.server.errors import HttpError
 from pdf_agent.server.json_utils import json_dumps_utf8_safe
 from pdf_agent.server.provider_catalog import catalog_provider_defaults, catalog_versions
 from pdf_agent.server.value_utils import string_value
 
 
-MODEL_CONFIG_VERSION = 1
+MODEL_CONFIG_VERSION = 2
 DEFAULT_CODEX_PROVIDER_ID = "codex_oauth"
 DEFAULT_MODEL_CONFIG_PATH = default_data_dir() / "model_providers.json"
 MODEL_REF_KEYS = frozenset({"assistant", "teachingFast", "teachingBalanced", "teachingQuality"})
@@ -58,7 +66,7 @@ def default_model_config() -> dict[str, Any]:
             "apiHost": "https://chatgpt.com/backend-api/codex/",
             "apiKeyRequired": False,
             "enabled": True,
-            "models": [MODEL_GPT_55, MODEL_GPT_54, MODEL_GPT_54_MINI],
+            "models": [*GPT_56_MODELS, MODEL_GPT_55, MODEL_GPT_54, MODEL_GPT_54_MINI],
             "websites": {
                 "official": "https://chatgpt.com/",
             },
@@ -71,10 +79,10 @@ def default_model_config() -> dict[str, Any]:
         "selectedProviderId": DEFAULT_CODEX_PROVIDER_ID,
         "providers": providers,
         "defaults": {
-            "assistant": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_55},
-            "teachingFast": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_54_MINI},
-            "teachingBalanced": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_54},
-            "teachingQuality": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_55},
+            "assistant": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_56_SOL},
+            "teachingFast": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_56_LUNA},
+            "teachingBalanced": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_56_TERRA},
+            "teachingQuality": {"providerId": DEFAULT_CODEX_PROVIDER_ID, "model": MODEL_GPT_56_SOL},
         },
     }
 
@@ -120,7 +128,7 @@ def public_model_config(config: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def normalize_model_config(value: Mapping[str, Any] | None, *, existing: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    source = value if isinstance(value, Mapping) else {}
+    source = _migrate_model_config(value if isinstance(value, Mapping) else {})
     fallback = default_model_config()
     existing_providers = {
         _canonical_provider_id(provider.get("id")): provider
@@ -187,6 +195,49 @@ def normalize_model_config(value: Mapping[str, Any] | None, *, existing: Mapping
         "providers": providers,
         "defaults": defaults,
     }
+
+
+def _migrate_model_config(source: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Upgrade untouched v1 built-in role defaults to the GPT-5.6 family.
+
+    Custom provider/model references are intentionally left unchanged.
+    """
+    raw_version = source.get("version")
+    try:
+        version = int(raw_version)
+    except (TypeError, ValueError):
+        version = 1
+    if version >= MODEL_CONFIG_VERSION:
+        return source
+
+    raw_defaults = source.get("defaults")
+    if not isinstance(raw_defaults, Mapping):
+        return source
+
+    replacements = {
+        "assistant": ({MODEL_GPT_55}, MODEL_GPT_56_SOL),
+        # Early v1 normalization could collapse missing role defaults to the
+        # provider's first model (then GPT-5.5). Treat that known artifact as
+        # an untouched built-in value too.
+        "teachingFast": ({MODEL_GPT_54_MINI, MODEL_GPT_55}, MODEL_GPT_56_LUNA),
+        "teachingBalanced": ({MODEL_GPT_54, MODEL_GPT_55}, MODEL_GPT_56_TERRA),
+        "teachingQuality": ({MODEL_GPT_55}, MODEL_GPT_56_SOL),
+    }
+    migrated_defaults = dict(raw_defaults)
+    changed = False
+    for key, (old_models, new_model) in replacements.items():
+        raw_ref = raw_defaults.get(key)
+        if not isinstance(raw_ref, Mapping):
+            continue
+        provider_id = _canonical_provider_id(raw_ref.get("providerId"))
+        model = string_value(raw_ref.get("model"), "")
+        if provider_id != DEFAULT_CODEX_PROVIDER_ID or model not in old_models:
+            continue
+        migrated_defaults[key] = {**dict(raw_ref), "model": new_model}
+        changed = True
+    if not changed:
+        return source
+    return {**dict(source), "defaults": migrated_defaults}
 
 
 def _normalize_provider(raw: Mapping[str, Any], *, existing: Mapping[str, Any] | None, index: int) -> dict[str, Any]:
@@ -335,9 +386,10 @@ def _normalize_defaults(value: Any, providers_by_id: Mapping[str, Mapping[str, A
         if not model:
             provider = providers_by_id.get(provider_id) or {}
             models = provider.get("models")
-            model = string_value(fallback_ref.get("model"), "")
-            if isinstance(models, list) and models:
-                model = string_value(models[0], model)
+            fallback_model = string_value(fallback_ref.get("model"), "")
+            model = fallback_model
+            if isinstance(models, list) and models and fallback_model not in models:
+                model = string_value(models[0], fallback_model)
         normalized[key] = {"providerId": provider_id, "model": model}
     return normalized
 

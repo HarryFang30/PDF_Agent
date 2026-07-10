@@ -4,7 +4,7 @@ provider:
   id: "codex_oauth"
   mode: "chatgpt_device_code"
   api_surface: "chatgpt_codex_backend"
-  default_model: "gpt-5.5"
+  default_model: "gpt-5.6-sol"
 
 device_flow:
   client_id: "${PDF_AGENT_OPENAI_OAUTH_CLIENT_ID}"

@@ -1,5 +1,5 @@
 version: "course-agent.prompt.v1"
-default_model: "gpt-5.5"
+default_model: "gpt-5.6-sol"
 api_surface: "responses"
 primary_output_schema: "synchropage.lecture.v1"
 

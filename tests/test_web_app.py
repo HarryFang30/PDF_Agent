@@ -1065,6 +1065,23 @@ class WebAppTest(unittest.TestCase):
             },
         )
 
+    def test_extracts_gpt_56_cache_write_tokens(self) -> None:
+        text = json.dumps(
+            {
+                "usage": {
+                    "input_tokens": 2400,
+                    "input_tokens_details": {
+                        "cached_tokens": 1200,
+                        "cache_write_tokens": 800,
+                    },
+                }
+            }
+        )
+
+        usage = _extract_prompt_cache_usage(text, "application/json")
+        self.assertEqual(usage["cached_tokens"], 1200)
+        self.assertEqual(usage["cache_write_tokens"], 800)
+
     def test_extracts_json_response_text(self) -> None:
         text = json.dumps(
             {

@@ -26,7 +26,7 @@ from pdf_agent.server.model_config import (
     provider_by_id,
     resolve_model_ref,
 )
-from pdf_agent.server.prompt_cache import _prompt_cache_metadata
+from pdf_agent.server.prompt_cache import _prompt_cache_metadata, _without_prompt_cache
 from pdf_agent.server.response_parsing import _extract_gateway_text
 from pdf_agent.server.value_utils import string_value
 
@@ -35,6 +35,8 @@ PostWithRetries = Callable[[str, dict[str, Any], dict[str, str]], Awaitable[tupl
 CodexAuthBuilder = Callable[..., Awaitable[Any]]
 DEEPSEEK_PROVIDER_ID = "deepseek"
 DEEPSEEK_HOSTS = frozenset({"api.deepseek.com"})
+OPENAI_PROVIDER_IDS = frozenset({"openai", "openai_api"})
+OPENAI_HOSTS = frozenset({"api.openai.com"})
 ENDPOINT_CODEX_OAUTH = "codex-oauth"
 ENDPOINT_OPENAI_CHAT = "openai-chat-completions"
 ENDPOINT_OPENAI_RESPONSES = "openai-responses"
@@ -115,7 +117,10 @@ async def post_responses_payload_for_body(
     headers = _api_key_headers(provider, endpoint_type=provider_type)
     if provider_type == ENDPOINT_OPENAI_RESPONSES:
         url = provider_api_url(provider, "responses", endpoint_type=provider_type)
-        api_payload = _strip_nonportable_responses_fields(payload)
+        api_payload = _strip_nonportable_responses_fields(
+            payload,
+            preserve_prompt_cache_fields=_is_official_openai_provider(provider),
+        )
     elif provider_type == ENDPOINT_ANTHROPIC_MESSAGES:
         url = provider_api_url(provider, "messages", endpoint_type=provider_type)
         api_payload = responses_payload_to_anthropic_messages(payload)
@@ -306,6 +311,27 @@ def responses_payload_to_chat_completions(
     }
     if provider is not None and _is_deepseek_provider(provider):
         chat_payload.update(_deepseek_chat_options(payload, chat_payload["model"]))
+    elif provider is not None and _is_official_openai_provider(provider):
+        reasoning = payload.get("reasoning")
+        if isinstance(reasoning, Mapping):
+            effort = string_value(reasoning.get("effort"), "")
+            if effort:
+                chat_payload["reasoning_effort"] = effort
+        max_completion_tokens = _max_output_tokens(payload, default=0)
+        if max_completion_tokens:
+            chat_payload["max_completion_tokens"] = max_completion_tokens
+        for field in ("prompt_cache_key", "prompt_cache_retention"):
+            if field in payload:
+                chat_payload[field] = payload[field]
+        cache_options = payload.get("prompt_cache_options")
+        if isinstance(cache_options, Mapping):
+            chat_cache_options = dict(cache_options)
+            # The broad Responses→Chat text conversion cannot retain content
+            # block breakpoints. Fall back to Chat's implicit breakpoint
+            # instead of sending explicit mode with zero usable markers.
+            chat_cache_options.pop("mode", None)
+            if chat_cache_options:
+                chat_payload["prompt_cache_options"] = chat_cache_options
     return chat_payload
 
 
@@ -440,6 +466,8 @@ async def check_provider_model(
     model: str,
     post_with_retries: PostWithRetries,
     config_store: ModelConfigStore | None = None,
+    manager: OpenAIOAuthManager | None = None,
+    codex_auth_builder: CodexAuthBuilder = build_chatgpt_codex_auth,
 ) -> dict[str, Any]:
     provider = dict(provider_value)
     if config_store is not None:
@@ -457,21 +485,40 @@ async def check_provider_model(
     }
     if not payload["model"]:
         raise HttpError(400, "A model is required for provider connection checks", code="model_required")
-    headers = _api_key_headers(provider, endpoint_type=endpoint_type)
-    if endpoint_type == ENDPOINT_OPENAI_RESPONSES:
+    if endpoint_type == ENDPOINT_CODEX_OAUTH:
+        if manager is None:
+            raise HttpError(400, "OpenAI OAuth manager is required for this model check", code="model_oauth_manager_required")
+        auth = await codex_auth_builder(manager)
+        url = codex_responses_url(base_url=auth.upstream_base_url)
+        request_payload = build_codex_responses_payload(
+            payload,
+            force_stream=True,
+            include_reasoning_encrypted_content=False,
+            strip_unsupported_fields=True,
+        )
+        headers = auth.headers
+    elif endpoint_type == ENDPOINT_OPENAI_RESPONSES:
+        headers = _api_key_headers(provider, endpoint_type=endpoint_type)
         url = provider_api_url(provider, "responses", endpoint_type=endpoint_type)
-        request_payload = _strip_nonportable_responses_fields(payload)
+        request_payload = _strip_nonportable_responses_fields(
+            payload,
+            preserve_prompt_cache_fields=_is_official_openai_provider(provider),
+        )
     elif endpoint_type == ENDPOINT_ANTHROPIC_MESSAGES:
+        headers = _api_key_headers(provider, endpoint_type=endpoint_type)
         url = provider_api_url(provider, "messages", endpoint_type=endpoint_type)
         request_payload = responses_payload_to_anthropic_messages(payload)
     elif endpoint_type == ENDPOINT_GOOGLE_GENERATE_CONTENT:
+        headers = _api_key_headers(provider, endpoint_type=endpoint_type)
         model_path = urllib.parse.quote(string_value(payload.get("model"), "").removeprefix("models/"), safe="")
         url = provider_api_url(provider, f"models/{model_path}:generateContent", endpoint_type=endpoint_type)
         request_payload = responses_payload_to_gemini_generate_content(payload)
     elif endpoint_type == ENDPOINT_OLLAMA_CHAT:
+        headers = _api_key_headers(provider, endpoint_type=endpoint_type)
         url = provider_api_url(provider, "chat", endpoint_type=endpoint_type)
         request_payload = responses_payload_to_ollama_chat(payload)
     else:
+        headers = _api_key_headers(provider, endpoint_type=endpoint_type)
         url = provider_api_url(provider, "chat/completions", endpoint_type=ENDPOINT_OPENAI_CHAT)
         request_payload = responses_payload_to_chat_completions(payload, provider=provider)
 
@@ -588,13 +635,25 @@ def _responses_content_text(value: Any) -> str:
     return ""
 
 
-def _strip_nonportable_responses_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
+def _strip_nonportable_responses_fields(
+    payload: Mapping[str, Any],
+    *,
+    preserve_prompt_cache_fields: bool = False,
+) -> dict[str, Any]:
     stripped = dict(payload)
     stripped["store"] = False
-    stripped.pop("prompt_cache_key", None)
-    stripped.pop("prompt_cache_retention", None)
+    if not preserve_prompt_cache_fields:
+        stripped = _without_prompt_cache(stripped)
     stripped.pop("include", None)
     return stripped
+
+
+def _is_official_openai_provider(provider: Mapping[str, Any]) -> bool:
+    provider_id = string_value(provider.get("id"), "").lower()
+    if provider_id in OPENAI_PROVIDER_IDS:
+        return True
+    parsed = urllib.parse.urlparse(_ensure_trailing_slash(string_value(provider.get("apiHost"), "")))
+    return parsed.netloc.lower() in OPENAI_HOSTS
 
 
 def _is_deepseek_provider(provider: Mapping[str, Any], *, parsed: urllib.parse.ParseResult | None = None) -> bool:

@@ -17,6 +17,8 @@ from pdf_agent.server.constants import (
     MAX_TEACHING_BALANCED_SOURCE_CHARS,
     MAX_TEACHING_FAST_SOURCE_CHARS,
     MAX_TEACHING_QUALITY_SOURCE_CHARS,
+    MODEL_GPT_56,
+    MODEL_GPT_56_LUNA,
     SYNCHROPAGE_FAST_TEACHING_INSTRUCTIONS,
     SYNCHROPAGE_SHARED_INSTRUCTIONS,
     TEACHING_GENERATOR_FAST_INSTRUCTIONS,
@@ -91,11 +93,17 @@ def _agent_answer_mode_effort(mode: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _reasoning_effort(body: Mapping[str, Any]) -> str:
+def _is_gpt_56_model(model: str) -> bool:
+    return model == MODEL_GPT_56 or model.startswith(f"{MODEL_GPT_56}-")
+
+
+def _reasoning_effort(body: Mapping[str, Any], *, model: str = "") -> str:
     reasoning = body.get("reasoning") if isinstance(body.get("reasoning"), Mapping) else {}
     quality_plan = body.get("qualityPlan") if isinstance(body.get("qualityPlan"), Mapping) else {}
     value = str(body.get("reasoningEffort") or reasoning.get("effort") or quality_plan.get("reasoningEffort") or "").strip()
-    if value in {"none", "low", "medium", "high", "xhigh"}:
+    if value in {"none", "low", "medium", "high", "xhigh", "max"}:
+        if value == "max" and model and not _is_gpt_56_model(model):
+            return "xhigh"
         return value
     if body.get("answerMode"):
         return _agent_answer_mode_effort(_agent_answer_mode(body))
@@ -152,8 +160,8 @@ def _is_fast_teaching_generation(body: Mapping[str, Any]) -> bool:
     if not isinstance(plan, Mapping):
         return False
     model = _string_value(plan.get("model") or body.get("model"), "")
-    reasoning_effort = _string_value(plan.get("reasoningEffort"), _reasoning_effort(body))
-    return "mini" in model and reasoning_effort in {"none", "low"} and not bool(plan.get("attachPdf"))
+    reasoning_effort = _string_value(plan.get("reasoningEffort"), _reasoning_effort(body, model=model))
+    return _is_fast_teaching_model(model) and reasoning_effort in {"none", "low"} and not bool(plan.get("attachPdf"))
 
 
 def _teaching_source_text_limit(body: Mapping[str, Any]) -> int:
@@ -161,13 +169,18 @@ def _teaching_source_text_limit(body: Mapping[str, Any]) -> int:
     if not isinstance(plan, Mapping):
         return MAX_TEACHING_QUALITY_SOURCE_CHARS
     model = _string_value(plan.get("model") or body.get("model"), "")
-    reasoning_effort = _string_value(plan.get("reasoningEffort"), _reasoning_effort(body))
+    reasoning_effort = _string_value(plan.get("reasoningEffort"), _reasoning_effort(body, model=model))
     attach_pdf = bool(plan.get("attachPdf"))
-    if attach_pdf or reasoning_effort in {"high", "xhigh"}:
+    if attach_pdf or reasoning_effort in {"high", "xhigh", "max"}:
         return MAX_TEACHING_QUALITY_SOURCE_CHARS
-    if "mini" in model and reasoning_effort in {"none", "low"}:
+    if _is_fast_teaching_model(model) and reasoning_effort in {"none", "low"}:
         return MAX_TEACHING_FAST_SOURCE_CHARS
     return MAX_TEACHING_BALANCED_SOURCE_CHARS
+
+
+def _is_fast_teaching_model(model: str) -> bool:
+    lowered = model.lower()
+    return "mini" in lowered or lowered == MODEL_GPT_56_LUNA
 
 
 def _teaching_quality_plan_lines(body: Mapping[str, Any]) -> list[str]:
@@ -669,7 +682,7 @@ def _build_responses_payload(
         "model": model,
         "instructions": SYNCHROPAGE_SHARED_INSTRUCTIONS,
         "input": [{"role": "user", "content": content}],
-        "reasoning": {"effort": _reasoning_effort(body)},
+        "reasoning": {"effort": _reasoning_effort(body, model=model)},
     }
     _apply_prompt_cache_fields(payload, body, model)
     return payload
@@ -699,7 +712,7 @@ def _build_teaching_generation_payload(
         "model": model,
         "instructions": _teaching_payload_instructions(body),
         "input": [{"role": "user", "content": content}],
-        "reasoning": {"effort": _reasoning_effort(body)},
+        "reasoning": {"effort": _reasoning_effort(body, model=model)},
     }
     _apply_prompt_cache_fields(payload, body, model)
     return payload
@@ -735,6 +748,9 @@ def _teaching_generation_candidate_bodies(
     if fallback_model and fallback_model != requested_model:
         fallback_body = dict(body)
         fallback_body["model"] = fallback_model
+        quality_plan = body.get("qualityPlan")
+        if isinstance(quality_plan, Mapping):
+            fallback_body["qualityPlan"] = {**dict(quality_plan), "model": fallback_model}
         if fallback_provider_id:
             fallback_body["modelProviderId"] = fallback_provider_id
         fallback_body.pop("fallbackModel", None)

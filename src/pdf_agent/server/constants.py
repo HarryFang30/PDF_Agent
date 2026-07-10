@@ -92,11 +92,22 @@ Escape LaTeX backslashes in JSON strings, for example write \\\\frac and \\\\to.
 # Canonical model identifiers used across backend modules.
 # Update these constants when model names change rather than hunting through
 # string literals in gateway / prompt-cache / payload-builder code.
+MODEL_GPT_56 = "gpt-5.6"
+MODEL_GPT_56_SOL = "gpt-5.6-sol"
+MODEL_GPT_56_TERRA = "gpt-5.6-terra"
+MODEL_GPT_56_LUNA = "gpt-5.6-luna"
 MODEL_GPT_55 = "gpt-5.5"
 MODEL_GPT_54 = "gpt-5.4"
 MODEL_GPT_54_MINI = "gpt-5.4-mini"
 
-DEFAULT_AGENT_MODEL = os.environ.get("PDF_AGENT_MODEL", MODEL_GPT_55)
+GPT_56_MODELS: tuple[str, ...] = (
+    MODEL_GPT_56_SOL,
+    MODEL_GPT_56_TERRA,
+    MODEL_GPT_56_LUNA,
+    MODEL_GPT_56,
+)
+
+DEFAULT_AGENT_MODEL = os.environ.get("PDF_AGENT_MODEL", MODEL_GPT_56_SOL)
 
 TEACHING_API_CONCURRENCY = 6
 TEACHING_UPSTREAM_TIMEOUT_SECONDS = _env_positive_int("PDF_AGENT_TEACHING_TIMEOUT_SECONDS", 90)

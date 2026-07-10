@@ -17,12 +17,13 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Plus,
+  Search,
   Settings,
   Settings2,
+  Sparkles,
   Square,
   Trash2,
   Upload,
-  Zap,
 } from "lucide-react";
 import {
   lazy,
@@ -1999,7 +2000,7 @@ export default function App() {
           </div>
           <div className="generate-split" ref={generateMenuRef}>
             <button
-              className="primary-button generate-main-button"
+              className={`primary-button generate-main-button ${isGeneratingNotes ? "is-stopping" : ""}`}
               type="button"
               onClick={() => {
                 setGenerateMenuOpen(false);
@@ -2011,11 +2012,11 @@ export default function App() {
               }}
               title={isGeneratingNotes ? copy.topbar.stopGeneration : generateScopeSummary}
             >
-              {isGeneratingNotes ? <Square /> : <Zap />}
+              {isGeneratingNotes ? <Square /> : <Sparkles />}
               {isGeneratingNotes ? copy.topbar.stopGeneration : copy.topbar.generate}
             </button>
             <button
-              className={`primary-button generate-menu-button ${generateMenuOpen ? "active" : ""}`}
+              className={`primary-button generate-menu-button ${generateMenuOpen ? "active" : ""} ${isGeneratingNotes ? "is-stopping" : ""}`}
               type="button"
               aria-label={copy.topbar.generateScopeLabel}
               aria-expanded={generateMenuOpen}
@@ -2220,13 +2221,13 @@ export default function App() {
 
       <main className="workspace" data-pane-count={visiblePaneCount}>
         <PanelGroup orientation="horizontal" className="workspace-panels">
-          <Panel className="workspace-panel" hidden={!panels.rail} defaultSize={20} minSize={16}>
+          <Panel className="workspace-panel" hidden={!panels.rail} defaultSize={17} minSize={14}>
             <aside className="page-rail document-rail">
               <div className="rail-top">
                 <div className="rail-header">
-                  <div>
-                    <strong>SynchroPage</strong>
-                    <span>{activeProject?.name || copy.rail.defaultCourse}</span>
+                  <div className="rail-header-copy">
+                    <span className="rail-eyebrow">{copy.rail.courses}</span>
+                    <strong>{activeProject?.name || copy.rail.defaultCourse}</strong>
                   </div>
                   <div className="rail-header-actions" ref={railActionMenuRef}>
                     <button
@@ -2270,6 +2271,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="search-box">
+                  <Search aria-hidden="true" />
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.rail.searchPlaceholder} />
                 </div>
               </div>
@@ -2437,7 +2439,11 @@ export default function App() {
 
           {panels.rail && <WorkspaceResizeHandle />}
 
-          <Panel className="workspace-panel" defaultSize={pdfOnly ? 100 : panels.notes && panels.agent ? 32 : 52} minSize={30}>
+          <Panel
+            className="workspace-panel"
+            defaultSize={pdfOnly ? 100 : panels.notes && panels.agent ? 36 : panels.notes ? 52 : panels.agent ? 55 : 83}
+            minSize={28}
+          >
             <section className="pdf-pane">
               <PaneToolbar
                 title={pdfUrl ? copy.common.sourcePdfPage(currentPdfPageNo) : copy.pdf.samplePdfPage}
@@ -2485,7 +2491,7 @@ export default function App() {
 
           {(panels.notes || panels.agent) && <WorkspaceResizeHandle />}
 
-          <Panel className="workspace-panel" hidden={!panels.notes} defaultSize={panels.agent ? 18 : 42} minSize={18}>
+          <Panel className="workspace-panel" hidden={!panels.notes} defaultSize={panels.agent ? 25 : 31} minSize={22}>
             <section className="notes-pane">
               <PaneToolbar
                 title={copy.notes.title}
@@ -2545,7 +2551,7 @@ export default function App() {
 
           {panels.notes && panels.agent && <WorkspaceResizeHandle />}
 
-          <Panel className="workspace-panel" hidden={!panels.agent} defaultSize={panels.notes ? 30 : 34} minSize={22}>
+          <Panel className="workspace-panel" hidden={!panels.agent} defaultSize={panels.notes ? 22 : 28} minSize={20}>
             {panels.agent && (
               <AgentPanel
                 key={agentRuntimeKey}

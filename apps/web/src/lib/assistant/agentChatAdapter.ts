@@ -87,7 +87,7 @@ type ChallengeRequest = {
   count: number;
 };
 
-const CHALLENGE_MODEL: ModelRef = { providerId: "codex_oauth", model: "gpt-5.5" };
+const CHALLENGE_MODEL: ModelRef = { providerId: "codex_oauth", model: "gpt-5.6-sol" };
 const CHALLENGE_REASONING_EFFORT: UiPreferences["modelReasoningEffort"] = "xhigh";
 const DEFAULT_CHALLENGE_COUNT = 1;
 const MAX_CHALLENGE_COUNT = 10;

@@ -88,7 +88,7 @@ function createMainWindow(url) {
     title: "SynchroPage",
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: "#f7f4ec",
+    backgroundColor: "#f5f6f8",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

@@ -71,6 +71,9 @@ def _extract_prompt_cache_usage(text: str, content_type: str) -> dict[str, Any]:
     cached_tokens = int_value(
         details.get("cached_tokens") or usage.get("cached_input_tokens"), 0
     )
+    cache_write_tokens = int_value(
+        details.get("cache_write_tokens") or usage.get("cache_write_tokens"), 0
+    )
 
     metadata: dict[str, Any] = {
         "cached_tokens": cached_tokens,
@@ -79,6 +82,8 @@ def _extract_prompt_cache_usage(text: str, content_type: str) -> dict[str, Any]:
     if input_tokens:
         metadata["input_tokens"] = input_tokens
         metadata["cached_ratio"] = round(cached_tokens / input_tokens, 4)
+    if cache_write_tokens:
+        metadata["cache_write_tokens"] = cache_write_tokens
     if output_tokens:
         metadata["output_tokens"] = output_tokens
     if total_tokens:

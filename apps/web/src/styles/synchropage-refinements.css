@@ -1,13 +1,11 @@
-/* SynchroPage warm workspace refinements */
-
-/* SynchroPage warm workspace refinements: token-driven surface, pane, and control hierarchy. */
+/* SynchroPage workspace: cool-neutral surfaces and a single indigo focus color. */
 body {
-  background: linear-gradient(180deg, var(--pp-bg-app), var(--pp-bg-main));
+  background: var(--pp-bg-app);
   color: var(--pp-text-secondary);
 }
 
 :root[data-synchropage-resolved-theme="dark"] body {
-  background: linear-gradient(180deg, var(--pp-bg-app), var(--pp-bg-main));
+  background: var(--pp-bg-app);
 }
 
 .app-shell {
@@ -29,11 +27,12 @@ body {
 
 .topbar {
   min-height: var(--pp-topbar-height);
-  gap: 14px;
-  padding: 8px 20px;
+  gap: 16px;
+  padding: 9px 18px;
   border-bottom-color: var(--pp-border-subtle);
-  background: color-mix(in oklch, var(--pp-bg-rail) 94%, transparent);
-  backdrop-filter: blur(2px) saturate(1.02);
+  background: color-mix(in oklch, var(--pp-bg-rail) 88%, transparent);
+  box-shadow: 0 1px 0 color-mix(in oklch, var(--pp-border-subtle) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(1.18);
 }
 
 .brand {
@@ -41,23 +40,25 @@ body {
 }
 
 .brand-mark {
-  width: 34px;
-  height: 34px;
-  border-color: color-mix(in oklch, var(--brand) 18%, var(--pp-border));
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--brand) 20%, var(--pp-bg-panel));
-  color: color-mix(in oklch, var(--brand) 82%, var(--pp-text-primary));
+  width: 36px;
+  height: 36px;
+  border-color: transparent;
+  border-radius: 12px;
+  background: linear-gradient(145deg, var(--pp-accent), var(--pp-accent-active));
+  color: var(--pp-on-accent);
   font-size: 12px;
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, white 28%, transparent);
+  letter-spacing: -0.04em;
+  box-shadow: 0 7px 18px color-mix(in oklch, var(--pp-accent) 22%, transparent), inset 0 1px 0 color-mix(in oklch, white 24%, transparent);
 }
 
 :root[data-synchropage-resolved-theme="dark"] .brand-mark {
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, white 7%, transparent);
+  box-shadow: 0 8px 22px color-mix(in oklch, var(--pp-accent) 18%, transparent), inset 0 1px 0 color-mix(in oklch, white 10%, transparent);
 }
 
 .brand h1 {
-  font-size: 17px;
-  font-weight: 720;
+  font-size: 18px;
+  font-weight: 680;
+  letter-spacing: -0.018em;
 }
 
 .brand p {
@@ -65,6 +66,7 @@ body {
   color: var(--pp-text-muted);
   font-family: var(--font-ui);
   font-size: 12px;
+  font-weight: 450;
 }
 
 .topbar-actions,
@@ -78,10 +80,10 @@ body {
   align-items: center;
   gap: 2px;
   padding: 2px;
-  border: 1px solid var(--pp-border-subtle);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 74%, transparent);
-  box-shadow: var(--pp-shadow-inset);
+  border: 1px solid color-mix(in oklch, var(--pp-border-subtle) 80%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--pp-bg-panel) 92%, transparent);
+  box-shadow: var(--pp-shadow-xs);
 }
 
 .topbar-page-nav {
@@ -102,10 +104,10 @@ body {
 
 .page-navigator output {
   min-width: 72px;
-  color: var(--pp-text-muted);
+  color: var(--pp-text-secondary);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
-  font-weight: 650;
+  font-weight: 620;
   text-align: center;
 }
 
@@ -125,8 +127,10 @@ body {
 
 .save-status-pill {
   height: 32px;
-  background: color-mix(in oklch, var(--pp-bg-panel) 72%, transparent);
+  border-color: transparent;
+  background: transparent;
   color: var(--pp-text-muted);
+  font-weight: 520;
 }
 
 .save-status-pill:hover {
@@ -134,13 +138,17 @@ body {
   color: var(--pp-text-secondary);
 }
 
+.save-status-pill.saved {
+  color: var(--pp-success);
+}
+
 .layout-switcher {
   height: 36px;
   gap: 2px;
   padding: 2px;
-  border-color: var(--pp-border-subtle);
-  border-radius: 11px;
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 74%, transparent);
+  border-color: transparent;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--pp-bg-panel-2) 84%, transparent);
 }
 
 .layout-switcher .mini-button {
@@ -152,14 +160,15 @@ body {
 .mini-button,
 .primary-button,
 .tab-button {
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--pp-bg-panel) 82%, transparent);
+  border-radius: 9px;
+  background: transparent;
   color: var(--pp-text-secondary);
 }
 
 .mini-button {
   width: var(--pp-icon-button);
   height: var(--pp-icon-button);
+  border-color: transparent;
 }
 
 .mini-button:hover,
@@ -169,7 +178,7 @@ body {
 .rail-icon-button.active,
 .rail-header-actions .mini-button:hover,
 .settings-button:hover:not(:disabled) {
-  border-color: var(--pp-border);
+  border-color: transparent;
   background: var(--pp-bg-hover);
   color: var(--pp-text-primary);
   transform: none;
@@ -180,8 +189,8 @@ body {
 .tab-button.active,
 .layout-switcher .mini-button.active {
   background: var(--pp-bg-selected);
-  color: color-mix(in oklch, var(--brand) 76%, var(--pp-text-primary));
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--brand) 16%, transparent);
+  color: var(--pp-accent-text);
+  box-shadow: none;
 }
 
 .mini-button:focus-visible,
@@ -202,23 +211,30 @@ body {
 
 .primary-button {
   height: 36px;
-  border-color: color-mix(in oklch, var(--brand-deep) 72%, var(--pp-border));
-  border-radius: 12px;
-  background: linear-gradient(180deg, color-mix(in oklch, var(--brand) 94%, white), var(--brand-deep));
+  border-color: transparent;
+  border-radius: 10px;
+  background: var(--pp-accent);
   color: var(--pp-on-accent);
-  font-weight: 760;
-  box-shadow: 0 8px 24px color-mix(in oklch, var(--brand) 16%, transparent);
+  font-weight: 650;
+  box-shadow: 0 6px 18px color-mix(in oklch, var(--pp-accent) 20%, transparent);
 }
 
 :root[data-synchropage-resolved-theme="dark"] .primary-button {
-  background: linear-gradient(180deg, color-mix(in oklch, var(--brand) 88%, var(--pp-bg-elevated)), color-mix(in oklch, var(--brand-deep) 86%, var(--pp-bg-app)));
-  box-shadow: 0 10px 30px color-mix(in oklch, var(--brand) 14%, transparent);
+  background: var(--pp-accent-active);
+  box-shadow: 0 8px 22px color-mix(in oklch, var(--pp-accent) 16%, transparent);
 }
 
 .primary-button:hover,
 .composer-send:hover {
+  background: var(--pp-accent-hover);
   filter: none;
   transform: translateY(-1px);
+}
+
+.primary-button.is-stopping,
+.primary-button.is-stopping + .generate-menu-button {
+  background: var(--pp-danger);
+  box-shadow: 0 6px 18px color-mix(in oklch, var(--pp-danger) 18%, transparent);
 }
 
 .generate-menu-button {
@@ -231,7 +247,7 @@ body {
 .selection-toolbar,
 .generation-details-popover {
   border-color: var(--pp-border);
-  border-radius: 14px;
+  border-radius: 16px;
   background: color-mix(in oklch, var(--pp-bg-elevated) 96%, transparent);
   box-shadow: var(--pp-shadow-popover);
 }
@@ -262,14 +278,14 @@ body {
 }
 
 .workspace-panels {
-  border-block-color: var(--pp-border-subtle);
+  border-block-color: transparent;
   background: var(--pp-bg-main);
 }
 
 .workspace-resize-handle {
-  width: 8px;
-  flex-basis: 8px;
-  background: var(--pp-bg-main);
+  width: 6px;
+  flex-basis: 6px;
+  background: transparent;
 }
 
 .workspace-resize-handle::before {
@@ -278,7 +294,7 @@ body {
 
 .workspace-resize-handle:hover,
 .workspace-resize-handle[data-resize-handle-active] {
-  background: color-mix(in oklch, var(--brand) 7%, var(--pp-bg-main));
+  background: color-mix(in oklch, var(--pp-accent) 8%, var(--pp-bg-main));
 }
 
 .workspace-resize-handle span {
@@ -293,7 +309,7 @@ body {
 }
 
 .page-rail {
-  min-width: min(var(--pp-sidebar-width), 100%);
+  min-width: 0;
   background: var(--pp-bg-sidebar);
 }
 
@@ -303,13 +319,27 @@ body {
 }
 
 .rail-top {
-  padding: 16px 12px 12px;
+  padding: 18px 14px 12px;
 }
 
 .rail-header strong {
   color: var(--pp-text-primary);
-  font-size: 16px;
-  font-weight: 720;
+  font-size: 15px;
+  font-weight: 660;
+}
+
+.rail-header-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.rail-header .rail-eyebrow {
+  margin: 0;
+  color: var(--pp-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .rail-header span,
@@ -329,10 +359,27 @@ body {
 
 .search-box input {
   height: 38px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--pp-bg-input);
   color: var(--pp-text-secondary);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, white 34%, transparent);
+  padding-left: 35px;
+  box-shadow: none;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box > svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 11px;
+  width: 15px;
+  height: 15px;
+  color: var(--pp-text-faint);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 :root[data-synchropage-resolved-theme="dark"] .search-box input {
@@ -358,7 +405,7 @@ body {
 .document-item,
 .recent-item,
 .rail-footer button {
-  border-radius: 11px;
+  border-radius: 10px;
   color: var(--pp-text-secondary);
   transition:
     background-color 120ms ease-out,
@@ -407,14 +454,7 @@ body {
 
 .course-item.active::before,
 .document-item.active::before {
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 4px;
-  width: 3px;
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--brand) 74%, var(--pp-accent-muted));
-  content: "";
+  display: none;
 }
 
 .document-dot {
@@ -461,25 +501,23 @@ body {
   min-height: var(--pp-pane-header-height);
   padding: 8px 14px;
   border-bottom-color: var(--pp-border-subtle);
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 78%, var(--pp-bg-panel));
+  background: color-mix(in oklch, var(--pp-bg-panel) 92%, transparent);
 }
 
 .toolbar-title {
   color: var(--pp-text-primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 630;
 }
 
 .status-dot,
 .agent-dot {
-  width: 6px;
-  height: 6px;
-  background: color-mix(in oklch, var(--brand) 56%, var(--pp-text-faint));
+  display: none;
 }
 
 .pdf-frame {
   place-items: start center;
-  padding: 24px 28px;
+  padding: 26px 30px;
   background: var(--pp-bg-pdf-stage);
 }
 
@@ -522,7 +560,7 @@ body {
   height: 5px;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--brand) 58%, var(--pp-text-faint));
+  background: var(--pp-text-faint);
   content: "";
   opacity: 0.74;
 }
@@ -537,7 +575,7 @@ body {
 }
 
 .pdf-page-layered {
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--pp-bg-pdf-page);
   box-shadow: var(--pp-shadow-pdf);
 }
@@ -581,7 +619,7 @@ body {
 }
 
 .notes-content {
-  padding: 28px clamp(22px, 4cqi, 40px) 34px;
+  padding: 30px clamp(24px, 4.5cqi, 44px) 38px;
 }
 
 .note-markdown {
@@ -591,9 +629,10 @@ body {
 .note-markdown h2 {
   color: var(--pp-text-primary);
   font-family: var(--font-ui);
-  font-size: clamp(24px, 4cqi, 32px);
-  font-weight: 690;
-  letter-spacing: 0;
+  font-size: clamp(23px, 3.4cqi, 30px);
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  line-height: 1.22;
 }
 
 .note-markdown h3 {
@@ -603,34 +642,37 @@ body {
 
 .note-markdown p {
   color: var(--pp-text-secondary);
+  font-size: calc(15.5px * var(--reader-font-scale));
+  line-height: 1.76;
 }
 
 .tab-group {
   height: 36px;
   gap: 2px;
-  border-color: var(--pp-border-subtle);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 78%, transparent);
+  border-color: transparent;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--pp-bg-panel-2) 92%, transparent);
 }
 
 .tab-button {
   height: 28px;
   max-width: 94px;
-  border-radius: 9px;
+  border-radius: 8px;
   color: var(--pp-text-muted);
 }
 
 .tab-button.active {
-  background: var(--pp-bg-selected);
-  color: color-mix(in oklch, var(--brand) 72%, var(--pp-text-primary));
+  background: var(--pp-bg-elevated);
+  color: var(--pp-accent-text);
+  box-shadow: var(--pp-shadow-xs);
 }
 
 .source-pill,
 .context-pill,
 .chip,
 .generation-progress-trigger {
-  border-color: var(--pp-border-subtle);
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 68%, transparent);
+  border-color: transparent;
+  background: color-mix(in oklch, var(--pp-bg-panel-2) 82%, transparent);
   color: var(--pp-text-muted);
 }
 
@@ -654,7 +696,7 @@ body {
 }
 
 .agent-panel {
-  min-width: min(var(--pp-agent-width), 100%);
+  min-width: 0;
   grid-template-rows: var(--pp-pane-header-height) auto minmax(0, 1fr);
   background: var(--pp-bg-panel);
 }
@@ -665,8 +707,9 @@ body {
 
 .agent-action-button {
   min-height: 34px;
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 62%, transparent);
+  border-color: transparent;
+  border-radius: 9px;
+  background: transparent;
   color: var(--pp-text-secondary);
   font-weight: 590;
 }
@@ -713,9 +756,9 @@ body {
 .prompt-suggestions button {
   min-height: 42px;
   padding: 9px 10px;
-  border: 1px solid var(--pp-border-subtle);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--pp-bg-panel-2) 58%, transparent);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--pp-bg-panel-2) 72%, transparent);
   color: var(--pp-text-secondary);
   line-height: 1.35;
 }
@@ -737,8 +780,8 @@ body {
 }
 
 .user-bubble {
-  border-color: color-mix(in oklch, var(--brand) 16%, var(--pp-border));
-  background: color-mix(in oklch, var(--brand) 6%, var(--pp-bg-panel));
+  border-color: transparent;
+  background: var(--pp-accent-soft);
   color: var(--pp-text-primary);
 }
 
@@ -796,14 +839,14 @@ body {
 .aui-composer-root {
   gap: 8px;
   padding: 9px;
-  border-radius: 18px;
-  background: var(--pp-bg-input);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, white 24%, transparent);
+  border-radius: 16px;
+  background: var(--pp-bg-elevated);
+  box-shadow: var(--pp-shadow-sm);
 }
 
 :root[data-synchropage-resolved-theme="dark"] .aui-composer-root {
   background: var(--pp-bg-input);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, white 4%, transparent);
+  box-shadow: var(--pp-shadow-sm);
 }
 
 .aui-composer-root:focus-within {
@@ -828,9 +871,9 @@ body {
 .composer-send {
   width: 34px;
   height: 34px;
-  border-color: color-mix(in oklch, var(--brand-deep) 70%, var(--pp-border));
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--brand) 92%, var(--brand-deep));
+  border-color: transparent;
+  border-radius: 10px;
+  background: var(--pp-accent);
   color: var(--pp-on-accent);
   box-shadow: none;
 }
@@ -988,36 +1031,6 @@ body {
 
 .course-dialog-actions button:last-child {
   border-color: color-mix(in oklch, var(--pp-accent) 64%, var(--pp-border));
-  background: linear-gradient(180deg, var(--pp-accent-hover), var(--pp-accent-active));
+  background: var(--pp-accent);
   color: var(--pp-on-accent);
-}
-
-@container (max-width: 560px) {
-  .notes-toolbar-right {
-    min-width: 0;
-  }
-
-  .tab-group {
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tab-group::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tab-button {
-    width: auto;
-    min-width: max-content;
-    padding-inline: 10px;
-  }
-
-  .tab-label-full {
-    display: inline;
-  }
-
-  .tab-label-short {
-    display: none;
-  }
 }

@@ -302,6 +302,7 @@ export function SettingsModal(props: SettingsModalProps) {
                         ["medium", copy.settings.agent.reasoningEffortMedium],
                         ["high", copy.settings.agent.reasoningEffortHigh],
                         ["xhigh", copy.settings.agent.reasoningEffortXHigh],
+                        ["max", copy.settings.agent.reasoningEffortMax],
                       ]}
                     />
                   </SettingsRow>
@@ -662,11 +663,11 @@ function ProviderSettingsPanel(props: {
   };
   const checkModel = async () => {
     if (!selectedProvider) return;
-    const model = selectedProvider.models[0] || "";
-    setPanelStatus("Checking provider...");
+    const model = providerDefaultModelForCheck(props.config, selectedProvider);
+    setPanelStatus(`Checking ${model}...`);
     try {
       const result = await props.onCheckModel(selectedProvider, model);
-      setPanelStatus(`Check passed${result.text ? ` · ${result.text.slice(0, 80)}` : ""}`);
+      setPanelStatus(`Check passed · ${result.model || model}${result.text ? ` · ${result.text.slice(0, 80)}` : ""}`);
     } catch (error) {
       setPanelStatus((error as Error).message || "Provider check failed");
     }
@@ -851,6 +852,16 @@ function ProviderSettingsPanel(props: {
       </div>
     </div>
   );
+}
+
+function providerDefaultModelForCheck(config: ModelApiConfig, provider: ModelApiProvider) {
+  const refs = [
+    config.defaults.assistant,
+    config.defaults.teachingQuality,
+    config.defaults.teachingBalanced,
+    config.defaults.teachingFast,
+  ];
+  return refs.find((ref) => ref.providerId === provider.id && ref.model)?.model || provider.models[0] || "";
 }
 
 function DefaultModelSettingsPanel(props: {

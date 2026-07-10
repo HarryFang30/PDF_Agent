@@ -40,7 +40,8 @@ async def post_payload_with_cache_fallback(
     2. If the error suggests the file input is unsupported → strip
        ``input_file`` parts and retry.
     3. If that also fails with a cache-related error → additionally strip
-       ``prompt_cache_key`` / ``prompt_cache_retention`` and retry.
+       ``prompt_cache_key`` / ``prompt_cache_retention`` /
+       ``prompt_cache_options`` and retry.
 
     Fallback metadata keys ``_synchropage_file_fallback_without_input_file``
     and ``_synchropage_cache_fallback_without_fields`` are set on the

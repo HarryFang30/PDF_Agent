@@ -88,6 +88,7 @@ export type AppCopy = {
       reasoningEffortMedium: string;
       reasoningEffortHigh: string;
       reasoningEffortXHigh: string;
+      reasoningEffortMax: string;
       pdfContextFullPageLimitLabel: string;
       pdfContextFullPageLimitDescription: string;
       pdfContextEdgePageCountLabel: string;
@@ -514,13 +515,13 @@ const zhCN: AppCopy = {
     },
     appearance: {
       themeLabel: "主题",
-      themeDescription: "切换 Claude-like 浅色、深色，或跟随系统外观。",
+      themeDescription: "选择清爽浅色、专注深色，或跟随系统外观。",
       themeSystem: "跟随系统",
       themeLight: "浅色",
       themeDark: "深色",
       accentLabel: "强调色",
-      accentDescription: "切换工作区的强调色 token。",
-      accentClay: "陶土色",
+      accentDescription: "选择用于主操作、焦点和选中状态的界面强调色。",
+      accentClay: "靛蓝",
       accentGraphite: "石墨灰",
       accentSage: "鼠尾草绿",
       pdfBackgroundLabel: "PDF 背景",
@@ -558,6 +559,7 @@ const zhCN: AppCopy = {
       reasoningEffortMedium: "medium · 推荐",
       reasoningEffortHigh: "high · 深度",
       reasoningEffortXHigh: "xhigh · 最强",
+      reasoningEffortMax: "max · GPT-5.6 极限",
       pdfContextFullPageLimitLabel: "全文上下文页数阈值",
       pdfContextFullPageLimitDescription: "控制 PDF 直传之外的可缓存页级文本索引：页数不超过时保留全文文本索引，原始 PDF 会优先直传。",
       pdfContextEdgePageCountLabel: "长 PDF 前后截取页数",
@@ -986,13 +988,13 @@ const enUS: AppCopy = {
     },
     appearance: {
       themeLabel: "Theme",
-      themeDescription: "Use Claude-like light mode, dark mode, or the system appearance.",
+      themeDescription: "Choose a crisp light theme, a focused dark theme, or follow the system appearance.",
       themeSystem: "System",
       themeLight: "Light",
       themeDark: "Dark",
       accentLabel: "Accent color",
-      accentDescription: "Switch the workspace accent token.",
-      accentClay: "Clay",
+      accentDescription: "Choose the interface color used for primary actions, focus, and selection.",
+      accentClay: "Indigo",
       accentGraphite: "Graphite",
       accentSage: "Sage",
       pdfBackgroundLabel: "PDF background",
@@ -1030,6 +1032,7 @@ const enUS: AppCopy = {
       reasoningEffortMedium: "medium · recommended",
       reasoningEffortHigh: "high · deep",
       reasoningEffortXHigh: "xhigh · strongest",
+      reasoningEffortMax: "max · GPT-5.6 maximum",
       pdfContextFullPageLimitLabel: "Full-context page limit",
       pdfContextFullPageLimitDescription: "Controls the cacheable page-text index in addition to direct PDF input. At or below this count, keep a full text index.",
       pdfContextEdgePageCountLabel: "Long-PDF edge pages",

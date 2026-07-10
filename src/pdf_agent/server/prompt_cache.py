@@ -19,7 +19,7 @@ from collections.abc import Callable, Mapping, Sequence
 from email.utils import parsedate_to_datetime
 from typing import Any
 
-from pdf_agent.server.constants import MODEL_GPT_54, MODEL_GPT_55
+from pdf_agent.server.constants import MODEL_GPT_54, MODEL_GPT_55, MODEL_GPT_56
 from pdf_agent.server.errors import HttpError
 from pdf_agent.server.json_utils import (
     json_dumps_utf8_safe,
@@ -33,6 +33,7 @@ from pdf_agent.server.value_utils import string_value
 # ---------------------------------------------------------------------------
 
 PROMPT_CACHE_VERSION = "synchropage.prompt-cache.v1"
+DOCUMENT_CACHE_PREFIX_MARKER = "SYNCHROPAGE CACHEABLE DOCUMENT CONTEXT"
 TEACHING_RETRY_DELAYS_SECONDS: tuple[float, ...] = (0.5, 1.5, 3.0)
 TEACHING_MAX_RETRY_DELAY_SECONDS = 12.0
 
@@ -107,7 +108,7 @@ def _apply_prompt_cache_fields(
     *,
     context_fn: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> None:
-    """Add ``prompt_cache_key`` / ``prompt_cache_retention`` to *payload*.
+    """Add the model-family-appropriate prompt-cache fields to *payload*.
 
     *context_fn* must be ``_normalized_document_cache_context`` (injected by
     the caller to avoid importing web_app.py).
@@ -118,12 +119,62 @@ def _apply_prompt_cache_fields(
     cache_key = _prompt_cache_key(body, context=context)
     if cache_key:
         payload["prompt_cache_key"] = cache_key
-        payload["prompt_cache_retention"] = "24h"
+        if _is_gpt_56_model(model):
+            payload["prompt_cache_options"] = {"mode": "explicit", "ttl": "30m"}
+            _set_document_cache_breakpoint(payload)
+        else:
+            payload["prompt_cache_retention"] = "24h"
 
 
 def _supports_prompt_cache(model: str) -> bool:
     """Return True when *model* is known to support prompt caching."""
-    return model.startswith((MODEL_GPT_55, MODEL_GPT_54))
+    return _is_gpt_56_model(model) or model.startswith((MODEL_GPT_55, MODEL_GPT_54))
+
+
+def _is_gpt_56_model(model: str) -> bool:
+    return model == MODEL_GPT_56 or model.startswith(f"{MODEL_GPT_56}-")
+
+
+def _set_document_cache_breakpoint(payload: dict[str, Any]) -> None:
+    """Mark the stable document/PDF boundary for GPT-5.6 explicit caching."""
+    input_value = payload.get("input")
+    if not isinstance(input_value, list) or not input_value:
+        return
+
+    copied_input: list[Any] = []
+    candidate: dict[str, Any] | None = None
+    for message in input_value:
+        if not isinstance(message, Mapping):
+            copied_input.append(message)
+            continue
+        copied_message = dict(message)
+        content = message.get("content")
+        if not isinstance(content, list):
+            copied_input.append(copied_message)
+            continue
+        copied_content: list[Any] = []
+        for part in content:
+            if not isinstance(part, Mapping):
+                copied_content.append(part)
+                continue
+            copied_part = dict(part)
+            copied_part.pop("prompt_cache_breakpoint", None)
+            part_type = copied_part.get("type")
+            if part_type == "input_file":
+                candidate = copied_part
+            elif part_type == "input_text":
+                text = str(copied_part.get("text") or "")
+                if text.startswith(DOCUMENT_CACHE_PREFIX_MARKER):
+                    candidate = copied_part
+                elif candidate is not None:
+                    copied_content.append(copied_part)
+                    continue
+            copied_content.append(copied_part)
+        copied_message["content"] = copied_content
+        copied_input.append(copied_message)
+    payload["input"] = copied_input
+    if candidate is not None:
+        candidate["prompt_cache_breakpoint"] = {"mode": "explicit"}
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +187,9 @@ def _should_retry_without_prompt_cache(
 ) -> bool:
     """True when a 400/422 error may be caused by the prompt-cache fields."""
     return exc.status in {400, 422} and bool(
-        payload.get("prompt_cache_key") or payload.get("prompt_cache_retention")
+        payload.get("prompt_cache_key")
+        or payload.get("prompt_cache_retention")
+        or payload.get("prompt_cache_options")
     )
 
 
@@ -227,10 +280,38 @@ def _should_try_next_teaching_generation_candidate(
 
 def _without_prompt_cache(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Return a shallow copy of *payload* without cache fields."""
-    fallback_payload = dict(payload)
+    fallback_payload = _without_prompt_cache_breakpoints(payload)
     fallback_payload.pop("prompt_cache_key", None)
     fallback_payload.pop("prompt_cache_retention", None)
+    fallback_payload.pop("prompt_cache_options", None)
     return fallback_payload
+
+
+def _without_prompt_cache_breakpoints(payload: Mapping[str, Any]) -> dict[str, Any]:
+    cleaned = dict(payload)
+    input_value = payload.get("input")
+    if not isinstance(input_value, list):
+        return cleaned
+    cleaned_input: list[Any] = []
+    for message in input_value:
+        if not isinstance(message, Mapping):
+            cleaned_input.append(message)
+            continue
+        cleaned_message = dict(message)
+        content = message.get("content")
+        if isinstance(content, list):
+            cleaned_content: list[Any] = []
+            for part in content:
+                if isinstance(part, Mapping):
+                    cleaned_part = dict(part)
+                    cleaned_part.pop("prompt_cache_breakpoint", None)
+                    cleaned_content.append(cleaned_part)
+                else:
+                    cleaned_content.append(part)
+            cleaned_message["content"] = cleaned_content
+        cleaned_input.append(cleaned_message)
+    cleaned["input"] = cleaned_input
+    return cleaned
 
 
 def _payload_has_file_input(payload: Mapping[str, Any]) -> bool:
@@ -274,6 +355,9 @@ def _without_file_input(payload: Mapping[str, Any]) -> dict[str, Any]:
             ]
         fallback_input.append(fallback_message)
     fallback_payload["input"] = fallback_input
+    options = fallback_payload.get("prompt_cache_options")
+    if isinstance(options, Mapping) and options.get("mode") == "explicit":
+        _set_document_cache_breakpoint(fallback_payload)
     return fallback_payload
 
 
@@ -293,6 +377,7 @@ def _prompt_cache_metadata(
     metadata: dict[str, Any] = {
         "prompt_cache_key": payload.get("prompt_cache_key"),
         "prompt_cache_retention": payload.get("prompt_cache_retention"),
+        "prompt_cache_options": payload.get("prompt_cache_options"),
         "prefix_hash": _sha256_text(prefix)[:24] if prefix else None,
         "prefix_chars": len(prefix),
         "fallback_without_cache": bool(
@@ -324,4 +409,4 @@ def _payload_document_cache_prefix(payload: Mapping[str, Any]) -> str:
     if not isinstance(first_part, Mapping) or first_part.get("type") != "input_text":
         return ""
     text = str(first_part.get("text") or "")
-    return text if text.startswith("SYNCHROPAGE CACHEABLE DOCUMENT CONTEXT") else ""
+    return text if text.startswith(DOCUMENT_CACHE_PREFIX_MARKER) else ""
